@@ -17,14 +17,14 @@ parser = argparse.ArgumentParser(
     "with Permutation Invariant Training")
 # General config
 # Task related
-parser.add_argument('--train_dir', type=str, default=None,
+parser.add_argument('--train_json', type=str, default=None,
                     help='directory including mix.json, s1.json and s2.json')
-parser.add_argument('--valid_dir', type=str, default=None,
+parser.add_argument('--valid_json', type=str, default=None,
                     help='directory including mix.json, s1.json and s2.json')
 parser.add_argument('--sample_rate', default=8000, type=int,
                     help='Sample rate')
-parser.add_argument('--segment', default=4, type=float,
-                    help='Segment length (seconds)')
+parser.add_argument('--segment_length', default=4, type=float,
+                    help='Segment_length length (seconds)')
 parser.add_argument('--cv_maxlen', default=8, type=float,
                     help='max audio length (seconds) in cv, to avoid OOM issue.')
 # Network architecture
@@ -101,16 +101,32 @@ parser.add_argument('--visdom_id', default='TasNet training',
 def main(args):
     # Construct Solver
     # data
-    tr_dataset = AudioDataset(args.train_dir, args.batch_size,
-                              sample_rate=args.sample_rate, segment=args.segment)
-    cv_dataset = AudioDataset(args.valid_dir, batch_size=1,  # 1 -> use less GPU memory to do cv
-                              sample_rate=args.sample_rate,
-                              segment=-1, cv_maxlen=args.cv_maxlen)  # -1 -> use full audio
-    tr_loader = AudioDataLoader(tr_dataset, batch_size=1,
-                                shuffle=args.shuffle,
-                                num_workers=args.num_workers)
-    cv_loader = AudioDataLoader(cv_dataset, batch_size=1,
-                                num_workers=0)
+    tr_dataset = AudioDataset(
+        args.train_json,
+        sample_rate=args.sample_rate,
+        segment_length=args.segmen
+    )
+
+    cv_dataset = AudioDataset(
+        args.valid_json,
+        sample_rate=args.sample_rate,
+        segment_length=-1,
+        cv_maxlen=args.cv_maxlen
+    )
+
+    tr_loader = AudioDataLoader(
+        tr_dataset,
+        batch_size=args.batch_size,
+        shuffle=args.shuffle,
+        num_workers=args.num_workers
+    )
+
+    cv_loader = AudioDataLoader(
+        cv_dataset,
+        batch_size=args.batch_size,
+        num_workers=0
+    )
+
     data = {'tr_loader': tr_loader, 'cv_loader': cv_loader}
     # model
     model = ConvTasNet(args.N, args.L, args.B, args.H, args.P, args.X, args.R,
