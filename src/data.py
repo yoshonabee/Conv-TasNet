@@ -64,11 +64,11 @@ class AudioDataset(Dataset):
 
         segment_frames = int(segment_length * sample_rate)  # 4s * 8000/s = 32000 samples
 
-        audios = sorted(audios.item(), key=lambda x: -int(x[1][-1]))
+        audios = sorted(audios.items(), key=lambda x: -int(x[1]['length']))
 
         data = [
-            [mixture_path, vocal_path, accompaniment_path, sample_rate, segment_frames]
-            for _, (mixture_path, vocal_path, accompaniment_path, _) in audios
+            [audio['mixture'], audio['vocal'], audio['accompaniment'], sample_rate, segment_frames]
+            for key, audio in audios
         ]
 
         return data
@@ -86,9 +86,13 @@ class AudioDataLoader(DataLoader):
     """
 
     def __init__(self, *args, **kwargs):
+        self.max_segments_per_batch = kwargs.get("batch_size", 1)
+        kwargs['batch_size'] = 1
         super(AudioDataLoader, self).__init__(*args, **kwargs)
-        self.max_segments_per_batch = self.batch_size
-        self.batch_size = 1
+        # self.max_segments_per_batch = self.batch_size
+        # self.batch_size = 1
+
+        # return _collate_fn(batch, self.max_segments_per_batch)
         self.collate_fn = _collate_fn
 
 def _collate_fn(batch):
@@ -197,7 +201,7 @@ def _collate_fn_eval(batch):
 
 
 # ------------------------------ utils ------------------------------------
-def load_mixtures_and_sources(batch, max_segments_per_batch):
+def load_mixtures_and_sources(batch):
     """
     Each info include wav path and wav duration.
     Returns:
@@ -206,30 +210,37 @@ def load_mixtures_and_sources(batch, max_segments_per_batch):
         T varies from item to item.
     """
     mixtures, sources = [], []
-    mix_infos, s1_infos, s2_infos, sample_rate, segment_len = batch
+    mix_path, s1_path, s2_path, sample_rate, segment_len = batch
+    # print(mix_infos)
+    # print()
+    # print(s1_infos)
+    # print()
+    # print(s2_infos)
+    # print("\n\n\n\n\n")
     # for each utterance
-    for mix_info, s1_info, s2_info in zip(mix_infos, s1_infos, s2_infos):
-        mix_path = mix_info[0]
-        s1_path = s1_info[0]
-        s2_path = s2_info[0]
-        assert mix_info[1] == s1_info[1] and s1_info[1] == s2_info[1]
+    # for mix_info, s1_info, s2_info in zip(mix_infos, s1_infos, s2_infos):
+        # mix_path = mix_info[0]
+        # s1_path = s1_info[0]
+        # s2_path = s2_info[0]
+        # assert mix_info[1] == s1_info[1] and s1_info[1] == s2_info[1]
         # read wav file
-        mix, _ = librosa.load(mix_path, sr=sample_rate)
-        s1, _ = librosa.load(s1_path, sr=sample_rate)
-        s2, _ = librosa.load(s2_path, sr=sample_rate)
-        # merge s1 and s2
-        s = np.dstack((s1, s2))[0]  # T x C, C = 2
-        utt_len = mix.shape[-1]
-        if segment_len >= 0:
-            # segment
-            for i in range(0, utt_len - 1, segment_len):
-                mixtures.append(mix[i:i+segment_len])
-                sources.append(s[i:i+segment_len])
-                if len(mixtures) == max_segments_per_batch:
-                    break
-        else:  # full utterance
-            mixtures.append(mix)
-            sources.append(s)
+    mix, _ = librosa.load(mix_path, sr=sample_rate)
+    s1, _ = librosa.load(s1_path, sr=sample_rate)
+    s2, _ = librosa.load(s2_path, sr=sample_rate)
+    # merge s1 and s2
+    # print(s1_path, s1.shape, s2_path, s2.shape)
+    s = np.dstack((s1, s2))[0]  # T x C, C = 2
+    utt_len = mix.shape[-1]
+    if segment_len >= 0:
+        # segment
+        for i in range(0, utt_len - 1, segment_len):
+            mixtures.append(mix[i:i+segment_len])
+            sources.append(s[i:i+segment_len])
+            if len(mixtures) == 4:
+                break
+    else:  # full utterance
+        mixtures.append(mix)
+        sources.append(s)
 
     return mixtures, sources
 

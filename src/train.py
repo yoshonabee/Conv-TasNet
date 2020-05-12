@@ -23,7 +23,7 @@ parser.add_argument('--valid_json', type=str, default=None,
                     help='directory including mix.json, s1.json and s2.json')
 parser.add_argument('--sample_rate', default=8000, type=int,
                     help='Sample rate')
-parser.add_argument('--segment_length', default=4, type=float,
+parser.add_argument('--segment_length', default=2, type=float,
                     help='Segment_length length (seconds)')
 parser.add_argument('--cv_maxlen', default=8, type=float,
                     help='max audio length (seconds) in cv, to avoid OOM issue.')
@@ -104,14 +104,13 @@ def main(args):
     tr_dataset = AudioDataset(
         args.train_json,
         sample_rate=args.sample_rate,
-        segment_length=args.segmen
+        segment_length=args.segment_length
     )
 
     cv_dataset = AudioDataset(
         args.valid_json,
         sample_rate=args.sample_rate,
         segment_length=-1,
-        cv_maxlen=args.cv_maxlen
     )
 
     tr_loader = AudioDataLoader(
