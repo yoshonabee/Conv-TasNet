@@ -23,7 +23,7 @@ parser.add_argument('--valid_json', type=str, default=None,
                     help='directory including mix.json, s1.json and s2.json')
 parser.add_argument('--sample_rate', default=8000, type=int,
                     help='Sample rate')
-parser.add_argument('--segment_length', default=2, type=float,
+parser.add_argument('--segment_length', default=4, type=float,
                     help='Segment_length length (seconds)')
 parser.add_argument('--cv_maxlen', default=8, type=float,
                     help='max audio length (seconds) in cv, to avoid OOM issue.')
@@ -64,7 +64,7 @@ parser.add_argument('--max_norm', default=5, type=float,
 # minibatch
 parser.add_argument('--shuffle', default=0, type=int,
                     help='reshuffle the data at every epoch')
-parser.add_argument('--batch_size', default=128, type=int,
+parser.add_argument('--batch_size', default=4, type=int,
                     help='Batch size')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers to generate minibatch')
@@ -110,7 +110,7 @@ def main(args):
     cv_dataset = AudioDataset(
         args.valid_json,
         sample_rate=args.sample_rate,
-        segment_length=-1,
+        segment_length=args.segment_length,
     )
 
     tr_loader = AudioDataLoader(

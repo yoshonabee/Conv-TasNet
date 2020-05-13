@@ -66,11 +66,24 @@ class AudioDataset(Dataset):
 
         audios = sorted(audios.items(), key=lambda x: -int(x[1]['length']))
 
-        data = [
-            [audio['mixture'], audio['vocal'], audio['accompaniment'], sample_rate, segment_frames]
-            for key, audio in audios
-        ]
+        for audio_name, audio in audios.items():
+            mixture_path = audio['mixture']
+            vocal_path = audio['vocal']
+            accompaniment_path = audio['accompaniment_path']
 
+            mixture, _ = librosa.load(mixture_path, sr=sample_rate)
+            vocal, _ = librosa.load(vocal_path, sr=sample_rate)
+            accompaniment, _ = librosa.load(accompaniment_path, sr=sample_rate)
+
+            s = np.dstack((vocal, accompaniment))[0]
+
+            if segment_len >= 0:
+                for i in range(0, mixture.shape[-1] - 1, segment_len):
+                    data.append([mixture[i:i+segment_len], s[i:i+segment_len]])
+            else:  # full utterance
+                data.append([mixture, s])
+
+        data = np.array(data)
         return data
 
     def __getitem__(self, index):
@@ -86,13 +99,6 @@ class AudioDataLoader(DataLoader):
     """
 
     def __init__(self, *args, **kwargs):
-        self.max_segments_per_batch = kwargs.get("batch_size", 1)
-        kwargs['batch_size'] = 1
-        super(AudioDataLoader, self).__init__(*args, **kwargs)
-        # self.max_segments_per_batch = self.batch_size
-        # self.batch_size = 1
-
-        # return _collate_fn(batch, self.max_segments_per_batch)
         self.collate_fn = _collate_fn
 
 def _collate_fn(batch):
@@ -105,8 +111,8 @@ def _collate_fn(batch):
         sources_pad: B x C x T, torch.Tensor
     """
     # batch should be located in list
-    assert len(batch) == 1
-    mixtures, sources = load_mixtures_and_sources(batch[0])
+    mixtures = batch[:,0]
+    sources = batch[:,1]
 
     # get batch of lengths of input sequences
     ilens = np.array([mix.shape[0] for mix in mixtures])
