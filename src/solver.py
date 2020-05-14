@@ -108,28 +108,27 @@ class Solver(object):
                     self.halving = False
                 self.prev_val_loss = val_loss
 
-            # Save the best model
-            self.tr_loss[epoch] = tr_avg_loss
-            try:
+                # Save the best model
+                self.tr_loss[epoch] = tr_avg_loss
                 self.cv_loss[epoch] = val_loss
-            except:
-                import math
-                self.cv_loss[epoch] = math.inf
 
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                file_path = os.path.join(self.save_folder, self.model_path)
-                torch.save(
-                    self.model.module.serialize(
-                        self.model.module,
-                        self.optimizer, epoch + 1,
-                        self.batches,
-                        tr_loss=self.tr_loss,
-                        cv_loss=self.cv_loss
-                    ),
-                    file_path
-                )
-                print("Find better validated model, saving to %s" % file_path)
+                if val_loss < self.best_val_loss:
+                    self.best_val_loss = val_loss
+                    file_path = os.path.join(self.save_folder, self.model_path)
+                    torch.save(
+                        self.model.module.serialize(
+                            self.model.module,
+                            self.optimizer, epoch + 1,
+                            self.batches,
+                            tr_loss=self.tr_loss,
+                            cv_loss=self.cv_loss
+                        ),
+                        file_path
+                    )
+                    print("Find better validated model, saving to %s" % file_path)
+            else:
+                self.tr_loss[epoch] = tr_avg_loss
+                self.cv_loss[epoch] = float("inf")
 
     def _run_one_epoch(self, epoch, cross_valid=False):
         start = time.time()
