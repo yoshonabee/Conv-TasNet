@@ -76,7 +76,7 @@ class ConvTasNet(nn.Module):
         return model
 
     @staticmethod
-    def serialize(model, optimizer, epoch, tr_loss=None, cv_loss=None):
+    def serialize(model, optimizer, epoch, batches=0, tr_loss=None, cv_loss=None):
         package = {
             # hyper-parameter
             'N': model.N, 'L': model.L, 'B': model.B, 'H': model.H,
@@ -86,7 +86,8 @@ class ConvTasNet(nn.Module):
             # state
             'state_dict': model.state_dict(),
             'optim_dict': optimizer.state_dict(),
-            'epoch': epoch
+            'epoch': epoch,
+            'batches': batches,
         }
         if tr_loss is not None:
             package['tr_loss'] = tr_loss

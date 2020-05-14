@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
     "with Permutation Invariant Training")
 # General config
 # Task related
-parser.add_argument('--train_json', type=str, default=None,
+parser.add_argument('train_json', type=str, default=None,
                     help='directory including mix.json, s1.json and s2.json')
 parser.add_argument('--valid_json', type=str, default=None,
                     help='directory including mix.json, s1.json and s2.json')
@@ -83,6 +83,7 @@ parser.add_argument('--save_folder', default='exp/temp',
                     help='Location to save epoch models')
 parser.add_argument('--checkpoint', dest='checkpoint', default=0, type=int,
                     help='Enables checkpoint saving of model')
+parser.add_argument('--valid_interval', type=int, default=3, help="Batch interval for validating")
 parser.add_argument('--continue_from', default='',
                     help='Continue from checkpoint model')
 parser.add_argument('--model_path', default='final.pth.tar',
@@ -90,12 +91,6 @@ parser.add_argument('--model_path', default='final.pth.tar',
 # logging
 parser.add_argument('--print_freq', default=10, type=int,
                     help='Frequency of printing training infomation')
-parser.add_argument('--visdom', dest='visdom', type=int, default=0,
-                    help='Turn on visdom graphing')
-parser.add_argument('--visdom_epoch', dest='visdom_epoch', type=int, default=0,
-                    help='Turn on visdom graphing each epoch')
-parser.add_argument('--visdom_id', default='TasNet training',
-                    help='Identifier for visdom run')
 
 
 def main(args):
@@ -136,14 +131,15 @@ def main(args):
         model = torch.nn.DataParallel(model)
         model.cuda()
     # optimizer
+    lr = args.lr / args.batch_per_step
     if args.optimizer == 'sgd':
         optimizier = torch.optim.SGD(model.parameters(),
-                                     lr=args.lr,
+                                     lr=lr,
                                      momentum=args.momentum,
                                      weight_decay=args.l2)
     elif args.optimizer == 'adam':
         optimizier = torch.optim.Adam(model.parameters(),
-                                      lr=args.lr,
+                                      lr=lr,
                                       weight_decay=args.l2)
     else:
         print("Not support optimizer")
