@@ -47,7 +47,7 @@ class AudioDataset(Dataset):
                         mixture: <mixture path>,
                         vocal: <vocal path>,
                         accompaniment: <accompaniment path>,
-                        audio_length: (int)
+                        length: (int)
                     }
             }
         """
@@ -65,11 +65,12 @@ class AudioDataset(Dataset):
         segment_frames = int(segment_length * sample_rate)  # 4s * 8000/s = 32000 samples
 
         audios = sorted(audios.items(), key=lambda x: -int(x[1]['length']))
+        data = []
 
-        for audio_name, audio in audios.items():
+        for audio_name, audio in audios:
             mixture_path = audio['mixture']
             vocal_path = audio['vocal']
-            accompaniment_path = audio['accompaniment_path']
+            accompaniment_path = audio['accompaniment']
 
             mixture, _ = librosa.load(mixture_path, sr=sample_rate)
             vocal, _ = librosa.load(vocal_path, sr=sample_rate)
@@ -77,11 +78,8 @@ class AudioDataset(Dataset):
 
             s = np.dstack((vocal, accompaniment))[0]
 
-            if segment_len >= 0:
-                for i in range(0, mixture.shape[-1] - 1, segment_len):
-                    data.append([mixture[i:i+segment_len], s[i:i+segment_len]])
-            else:  # full utterance
-                data.append([mixture, s])
+            for i in range(0, mixture.shape[-1] - 1, segment_frames):
+                data.append([mixture[i:i+segment_frames], s[i:i+segment_frames]])
 
         data = np.array(data)
         return data
@@ -99,6 +97,7 @@ class AudioDataLoader(DataLoader):
     """
 
     def __init__(self, *args, **kwargs):
+        super(AudioDataLoader, self).__init__(*args, **kwargs)
         self.collate_fn = _collate_fn
 
 def _collate_fn(batch):
@@ -111,8 +110,8 @@ def _collate_fn(batch):
         sources_pad: B x C x T, torch.Tensor
     """
     # batch should be located in list
-    mixtures = batch[:,0]
-    sources = batch[:,1]
+    mixtures = [b[0] for b in batch]
+    sources = [b[1] for b in batch]
 
     # get batch of lengths of input sequences
     ilens = np.array([mix.shape[0] for mix in mixtures])
