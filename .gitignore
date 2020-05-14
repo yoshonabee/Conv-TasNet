@@ -6,3 +6,4 @@ tools/create-speaker-mixtures
 
 nohup.out
 __pycache__
+*exp

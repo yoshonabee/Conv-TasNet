@@ -66,6 +66,7 @@ parser.add_argument('--shuffle', default=0, type=int,
                     help='reshuffle the data at every epoch')
 parser.add_argument('--batch_size', default=4, type=int,
                     help='Batch size')
+parser.add_argument('--batch_per_step', default=1, type=int)
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers to generate minibatch')
 # optimizer

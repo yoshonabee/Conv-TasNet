@@ -110,7 +110,12 @@ class Solver(object):
 
             # Save the best model
             self.tr_loss[epoch] = tr_avg_loss
-            self.cv_loss[epoch] = val_loss
+            try:
+                self.cv_loss[epoch] = val_loss
+            except:
+                import math
+                self.cv_loss[epoch] = math.inf
+
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 file_path = os.path.join(self.save_folder, self.model_path)
@@ -156,7 +161,8 @@ class Solver(object):
 
                 total_loss += loss.item()
 
-                postfix = f"Iter {i + 1} | Steps {self.batches // self.batch_per_step} | Average Loss {(total_loss / i + 1):.{3}} | Loss {loss.item():.{6}} | {1000 * (time.time() - start) / (i + 1):.{1}} ms/batch"
+                postfix = f"Iter {i + 1} | Steps {self.batches // self.batch_per_step} | Average Loss {(total_loss / (i + 1)):.{3}} | Loss {loss.item():.{6}}"
                 t.set_postfix_str(postfix)
+                t.update(padded_mixture.size(0))
 
         return total_loss / (i + 1)
